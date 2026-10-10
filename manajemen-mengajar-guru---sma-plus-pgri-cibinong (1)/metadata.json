@@ -1,0 +1,6 @@
+{
+  "name": "Manajemen Mengajar Guru - SMA Plus PGRI Cibinong",
+  "description": "Sistem informasi manajemen mengajar guru untuk absensi siswa, penilaian formatif & sumatif, agenda harian mengajar, serta cetak & ekspor dokumen resmi PDF dan Excel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
