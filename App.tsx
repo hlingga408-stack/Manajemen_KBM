@@ -79,11 +79,23 @@ export default function App() {
   }, []);
 
   // 2. Kirim data ke database setiap kali ada perubahan di aplikasi
+  // 2. Kirim data ke database setiap kali ada perubahan di aplikasi
   useEffect(() => {
-    saveAppState(appState); // Tetap simpan di penyimpanan lokal
+    saveAppState(appState);
+    
     const timeout = setTimeout(() => {
-      firebaseSet(ref(db, 'sekolah_data'), appState);
+      console.log("Cek URL Database:", import.meta.env.VITE_FIREBASE_DATAB);
+      console.log("Mencoba mengirim data ke Firebase...", appState);
+      
+      firebaseSet(ref(db, 'sekolah_data'), appState)
+        .then(() => {
+          console.log("✅ SUKSES! Data berhasil ditulis ke Firebase.");
+        })
+        .catch((error) => {
+          console.error("❌ GAGAL menulis ke Firebase:", error);
+        });
     }, 800);
+    
     return () => clearTimeout(timeout);
   }, [appState]);
   // ------------------------------------
