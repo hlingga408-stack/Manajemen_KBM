@@ -13,7 +13,8 @@ import { LoginView } from './components/LoginView';
 
 // --- KONFIGURASI FIREBASE ---
 const firebaseConfig = {
-  databaseURL: import.meta.env.VITE_FIREBASE_DATAB 
+  databaseURL: "https://manajemen-kbm-default-rtdb.asia-southeast1.firebasedatabase.app"
+}; 
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
