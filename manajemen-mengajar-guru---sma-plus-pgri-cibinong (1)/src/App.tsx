@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, onValue, set as firebaseSet } from 'firebase/database';
 import { ActiveTab, Student, AttendanceRecord, GradeItem, TeachingAgenda, SchoolProfile } from './types';
 import { loadAppState, saveAppState, resetToDefaults, AppData } from './utils/storage';
 import { Navbar } from './components/Navbar';
@@ -8,6 +10,14 @@ import { AgendaMengajarView } from './components/AgendaMengajarView';
 import { SiswaManagerView } from './components/SiswaManagerView';
 import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
+
+// --- KONFIGURASI FIREBASE ---
+const firebaseConfig = {
+  databaseURL: import.meta.env.VITE_FIREBASE_DATAB 
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+// ----------------------------
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -49,10 +59,46 @@ export default function App() {
     }
   };
 
-  // Sync to local storage whenever state changes
+  // --- LOGIKA SINKRONISASI FIREBASE ---
+  
+  // 1. Tarik data dari database saat aplikasi pertama kali dibuka
+  useEffect(() => {
+    const dataRef = ref(db, 'sekolah_data');
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      const cloudData = snapshot.val();
+      if (cloudData) {
+        setAppState((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(cloudData)) {
+            return cloudData;
+          }
+          return prev;
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Kirim data ke database setiap kali ada perubahan di aplikasi
+  // 2. Kirim data ke database setiap kali ada perubahan di aplikasi
   useEffect(() => {
     saveAppState(appState);
+    
+    const timeout = setTimeout(() => {
+      console.log("Cek URL Database:", import.meta.env.VITE_FIREBASE_DATAB);
+      console.log("Mencoba mengirim data ke Firebase...", appState);
+      
+      firebaseSet(ref(db, 'sekolah_data'), appState)
+        .then(() => {
+          console.log("✅ SUKSES! Data berhasil ditulis ke Firebase.");
+        })
+        .catch((error) => {
+          console.error("❌ GAGAL menulis ke Firebase:", error);
+        });
+    }, 800);
+    
+    return () => clearTimeout(timeout);
   }, [appState]);
+  // ------------------------------------
 
   // Handlers for Absensi
   const handleSaveAttendance = (record: AttendanceRecord) => {
@@ -76,7 +122,6 @@ export default function App() {
       const targetSem = updatedGrades[0].semester;
       const targetTA = updatedGrades[0].tahunAjaran;
 
-      // Keep grades from other classes/subjects
       const retained = prev.grades.filter(
         (g) =>
           !(
@@ -154,11 +199,9 @@ export default function App() {
 
   const handleImportStudents = (newStudents: Student[]) => {
     setAppState((prev) => {
-      // Avoid duplicate NIS if already exists in the same class
       const existingNisSet = new Set(prev.students.map((s) => `${s.kelas}-${s.nis}`));
       const filteredNew = newStudents.filter((s) => !existingNisSet.has(`${s.kelas}-${s.nis}`));
       
-      // Auto register any new class from import
       const newClassesSet = new Set(prev.classes);
       filteredNew.forEach((s) => {
         if (s.kelas) newClassesSet.add(s.kelas);
@@ -222,7 +265,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800">
-      {/* Top Navbar Header */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -231,7 +273,6 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 lg:px-6 py-4">
         {activeTab === 'absensi' && (
           <AbsensiView
@@ -289,7 +330,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-2.5 px-3 sm:px-6 mt-auto text-center text-[11px] text-slate-500 print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5">
           <span>
